@@ -1,0 +1,17 @@
+node_modules/
+dist/
+dist-single/
+# Generated test/e2e reports, video and debug output
+shots/*.mp4
+shots/*.json
+shots/frames/
+*.log
+npm-debug.log*
+debug*.png
+/tmp/
+.env
+.env.*
+!.env.example
+.DS_Store
+.vite/
+coverage/

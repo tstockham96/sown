@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#11122a" />
+<meta name="description" content="A daily sowing puzzle. Scoop a pot, sow it in a straight line, and harvest every pot that hits exactly four." />
+<meta property="og:title" content="SOWN — today's field" />
+<meta property="og:description" content="Ten scoops. Sow seeds in a line; every pot that hits exactly 4 is harvested. Plan the big combos." />
+<title>SOWN</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2311122a'/%3E%3Ccircle cx='22' cy='24' r='7' fill='%23ffc94a'/%3E%3Ccircle cx='42' cy='24' r='7' fill='%23ffc94a'/%3E%3Ccircle cx='22' cy='42' r='7' fill='%23ffc94a'/%3E%3Ccircle cx='42' cy='42' r='7' fill='%23ffc94a'/%3E%3C/svg%3E" />
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <button class="icon" id="btn-help" aria-label="How to play" data-testid="help">?</button>
+    <div class="brand">
+      <div class="logo" aria-label="SOWN"><span>SO</span>WN</div>
+      <div class="sub" data-testid="sub"></div>
+    </div>
+    <button class="icon" id="btn-stats" aria-label="Stats" data-testid="stats-btn">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path d="M5 20V11M12 20V5M19 20v-6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+  <div class="banner hidden" data-testid="challenge-banner"></div>
+  <div class="play">
+    <div class="example hidden" data-testid="example"></div>
+    <main class="stage">
+      <div class="frame" id="frame">
+        <div class="field" id="field" data-testid="board"></div>
+        <div class="fly" id="fly"></div>
+        <div class="title-card hidden" data-testid="title-card"><small></small><b></b></div>
+      </div>
+    </main>
+    <section class="tracker">
+      <div class="pips" data-testid="pips"></div>
+      <div class="count" data-testid="count"></div>
+    </section>
+    <div class="toast" data-testid="toast"></div>
+    <p class="caption" data-testid="caption"></p>
+    <div class="cta hidden" data-testid="cta-results"><button class="btn primary" id="btn-results">See results</button></div>
+  </div>
+  <footer class="tagline" data-testid="tagline">A new field every midnight</footer>
+
+  <div class="scrim hidden" id="scrim"></div>
+  <section class="sheet" id="sheet-results" data-testid="results" aria-hidden="true"></section>
+  <section class="sheet" id="sheet-stats" data-testid="stats" aria-hidden="true"></section>
+  <section class="sheet" id="sheet-help" data-testid="help-sheet" aria-hidden="true"></section>
+  <section class="sheet" id="sheet-archive" data-testid="archive" aria-hidden="true"></section>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

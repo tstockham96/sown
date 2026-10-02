@@ -1,0 +1,29 @@
+{
+  "name": "sown",
+  "version": "1.0.0",
+  "description": "SOWN: a daily sowing puzzle. Scoop a pot, sow it in a line, harvest every pot that hits exactly four.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && vite build --mode single",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "verify": "node scripts/play.mjs",
+    "audit": "tsx scripts/audit.ts", "par": "tsx scripts/par.ts",
+    "e2e": "node scripts/play.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "playwright-core": "^1.63.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "@fontsource/fraunces": "^5.3.0",
+    "@fontsource/unbounded": "^5.3.0"
+  }
+}
