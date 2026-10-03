@@ -1,7 +1,7 @@
 {
   "name": "sown",
   "version": "1.0.0",
-  "description": "SOWN: a daily sowing puzzle. Scoop a pot, sow it in a line, harvest every pot that hits exactly four.",
+  "description": "FOURS: a daily number puzzle. Drag a tile to spread its number across the line, +1 each. Any tile that hits exactly 4 clears.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "verify": "node scripts/play.mjs",
-    "audit": "tsx scripts/audit.ts", "par": "tsx scripts/par.ts",
+    "audit": "tsx scripts/audit.ts",
+    "par": "tsx scripts/par.ts",
     "e2e": "node scripts/play.mjs"
   },
   "devDependencies": {
@@ -23,7 +24,6 @@
     "vitest": "^5.0.3"
   },
   "dependencies": {
-    "@fontsource/fraunces": "^5.3.0",
-    "@fontsource/unbounded": "^5.3.0"
+    "@fontsource/inter": "^5.3.0"
   }
 }

@@ -1,24 +1,25 @@
 /**
  * Runtime config. Override at build time with VITE_* env vars, or at runtime by defining
- * `window.SOWN_CONFIG = {...}` before the app script runs.
+ * `window.FOURS_CONFIG = {...}` (legacy `SOWN_CONFIG` also works) before the app script runs.
  */
-export interface SownConfig {
+export interface FoursConfig {
   publicUrl: string; // canonical URL for share/challenge links ('' = current page)
   features: {
-    premium: boolean; // SOWN+ upsell: archive of past fields
+    premium: boolean; // FOURS+ upsell: archive of past boards
     ads: boolean; // ad slot on the results sheet
   };
 }
 declare global {
   interface Window {
-    SOWN_CONFIG?: Partial<SownConfig>;
+    FOURS_CONFIG?: Partial<FoursConfig>;
+    SOWN_CONFIG?: Partial<FoursConfig>;
   }
 }
-/** Where SOWN is published. Share and challenge links always point here unless overridden. */
+/** Where FOURS is published (the repo is still called `sown`, so old links keep working). Share and challenge links always point here unless overridden. */
 export const DEFAULT_PUBLIC_URL = 'https://tstockham96.github.io/sown/';
 const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
-const runtime = (typeof window !== 'undefined' && window.SOWN_CONFIG) || {};
-export const CONFIG: SownConfig = {
+const runtime = (typeof window !== 'undefined' && (window.FOURS_CONFIG ?? window.SOWN_CONFIG)) || {};
+export const CONFIG: FoursConfig = {
   publicUrl: runtime.publicUrl ?? env.VITE_PUBLIC_URL ?? DEFAULT_PUBLIC_URL,
   features: {
     premium: runtime.features?.premium ?? env.VITE_FEATURE_PREMIUM !== '0',

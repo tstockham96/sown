@@ -24,20 +24,20 @@ async function player(label, url) {
   page.on('console', (m) => m.type() === 'error' && report.errors.push(`${label} console ${m.text()}`));
   const t0 = Date.now();
   await page.goto(url);
-  await page.waitForFunction(() => !!window.__sown);
+  await page.waitForFunction(() => !!window.__fours);
   const cdp = await ctx.newCDPSession(page);
   return { ctx, page, cdp, t0, label };
 }
 const touch = (P, type, x, y) => P.cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1, radiusX: 9, radiusY: 9, force: 1 }] });
 const shot = async (P, name) => { await P.page.screenshot({ path: `${SHOTS}/${name}` }); log('screenshot', name); };
-const S = (P) => P.page.evaluate(() => ({ mode: window.__sown.mode, busy: window.__sown.busy, score: window.__sown.score, moves: window.__sown.moves, row: window.__sown.row }));
-const idle = (P) => P.page.waitForFunction(() => !window.__sown.busy, null, { timeout: 15000 });
+const S = (P) => P.page.evaluate(() => ({ mode: window.__fours.mode, busy: window.__fours.busy, score: window.__fours.score, moves: window.__fours.moves, row: window.__fours.row }));
+const idle = (P) => P.page.waitForFunction(() => !window.__fours.busy, null, { timeout: 15000 });
 const DIRV = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
-/** Drag a pot with a finger: press on its centre, slide ~0.7 pot in the direction, (optionally pause), release. */
-async function dragSow(P, m, { onHold } = {}) {
+/** Drag a tile with a finger: press on its centre, slide ~0.75 tile in the direction, (optionally pause), release. */
+async function dragMove(P, m, { onHold, onRelease } = {}) {
   const c = m >> 2, d = m & 3;
-  const pc = await P.page.evaluate((c) => window.__sown.potCenter(c), c);
+  const pc = await P.page.evaluate((c) => window.__fours.tileCenter(c), c);
   const jx = (Math.random() - 0.5) * 6, jy = (Math.random() - 0.5) * 6;
   await touch(P, 'touchStart', pc.x + jx, pc.y + jy);
   await P.page.waitForTimeout(50);
@@ -48,13 +48,14 @@ async function dragSow(P, m, { onHold } = {}) {
   }
   if (onHold) { await P.page.waitForTimeout(250); await onHold(); }
   await touch(P, 'touchEnd', 0, 0);
+  if (onRelease) await onRelease();
   await P.page.waitForTimeout(60);
   await idle(P);
 }
-/** Tap a pot, then tap one of the four arrow buttons. */
-async function tapSow(P, m, { onArrows } = {}) {
+/** Tap a tile, then tap one of the four arrow buttons. */
+async function tapMove(P, m, { onArrows } = {}) {
   const c = m >> 2, d = m & 3;
-  const pc = await P.page.evaluate((c) => window.__sown.potCenter(c), c);
+  const pc = await P.page.evaluate((c) => window.__fours.tileCenter(c), c);
   await touch(P, 'touchStart', pc.x, pc.y); await P.page.waitForTimeout(60); await touch(P, 'touchEnd', 0, 0);
   await P.page.waitForSelector(`.dirbtn[data-dir="${d}"]`);
   if (onArrows) await onArrows();
@@ -64,14 +65,14 @@ async function tapSow(P, m, { onArrows } = {}) {
   await idle(P);
 }
 const greedyMove = (P) => P.page.evaluate(() => {
-  const G = window.__sown; let best = -1, bm = -1;
+  const G = window.__fours; let best = -1, bm = -1;
   for (const m of G.legal()) { const r = G.preview(m); const v = r.points * 100 - r.lost * 2 + Math.random(); if (v > best) { best = v; bm = m; } }
   return bm;
 });
 
 // ============================================================ Player A: first open, plays by dragging
 const A = await player('A', FILE + '?reset');
-const info = await A.page.evaluate(() => ({ n: window.__sown.puzzle.n, best: window.__sown.puzzle.best, bestLine: window.__sown.puzzle.bestLine, board: window.__sown.board }));
+const info = await A.page.evaluate(() => ({ n: window.__fours.puzzle.n, best: window.__fours.puzzle.best, bestLine: window.__fours.puzzle.bestLine, board: window.__fours.board }));
 log('puzzle', { n: info.n, best: info.best });
 await A.page.waitForTimeout(1600);
 assert(await A.page.isVisible('[data-testid=example]'), 'first visit shows the one-line example');
@@ -80,30 +81,31 @@ assert(/exactly\s*4/.test(cap), 'caption states the rule in one sentence');
 await shot(A, '01-start.png');
 const firstTouchMs = Date.now() - A.t0;
 
-// Plan: follow the best-known line for 7 scoops, then play greedily (a strong but imperfect human).
+// Plan: follow the best-known line for 7 moves, then play greedily (a strong but imperfect human).
 const plan = info.bestLine.slice(0, 7);
 let decisionLogged = false;
 for (let i = 0; i < 10; i++) {
   const m = i < plan.length ? plan[i] : await greedyMove(A);
   const before = await S(A);
-  const pv = await A.page.evaluate((m) => window.__sown.preview(m), m);
-  await dragSow(A, m, i === 0 ? { onHold: async () => {
+  const pv = await A.page.evaluate((m) => window.__fours.preview(m), m);
+  await dragMove(A, m, i === 3 ? { onRelease: async () => { await A.page.waitForTimeout(170); await shot(A, '03-midmove.png'); } } : i === 1 ? { onHold: async () => {
     const g = await greedyMove(A);
-    const gp = await A.page.evaluate((m) => window.__sown.preview(m), g);
-    const ui = await A.page.evaluate(() => ({ gain: document.querySelector('#fly .gain')?.textContent, will: document.querySelectorAll('.pot.will').length, path: document.querySelectorAll('.pot.path').length }));
-    log('decision on scoop 1', { chosen: m, chosenPoints: pv.points, chosenHarvest: pv.harvested.length, greedyAlt: g, greedyPoints: gp.points, previewUI: ui });
-    assert(ui.path === pv.path.length && ui.will === pv.harvested.length, 'drag preview shows the path and the pots that will hit 4');
+    const gp = await A.page.evaluate((m) => window.__fours.preview(m), g);
+    const ui = await A.page.evaluate(() => ({ gain: document.querySelector('#fly .gain')?.textContent, will: document.querySelectorAll('.tile.will').length, path: document.querySelectorAll('.tile.path').length, shown: [...document.querySelectorAll('.tile.path .v')].map((e) => e.textContent).join(',') }));
+    log('decision on move 2', { chosen: m, chosenPoints: pv.points, chosenClears: pv.harvested.length, greedyAlt: g, greedyPoints: gp.points, previewUI: ui });
+    assert(ui.path === pv.path.length && ui.will === pv.harvested.length, 'drag preview shows the path and the tiles that will hit 4');
+    assert(ui.gain.startsWith(`+${pv.points}`), 'drag preview shows the points');
     await shot(A, '02-decision.png');
     decisionLogged = true;
   } } : {});
   const after = await S(A);
-  assert(after.moves.length === before.moves.length + 1 && after.score === before.score + pv.points, `scoop ${i + 1}: committed, +${pv.points}`);
-  if (i === 4) await shot(A, '03-midgame.png');
+  assert(after.moves.length === before.moves.length + 1 && after.score === before.score + pv.points, `move ${i + 1}: committed, +${pv.points}`);
+  if (i === 5) await shot(A, '03b-midgame.png');
   if (after.mode !== 'playing') break;
 }
 assert(decisionLogged, 'decision screenshot taken');
 const fin = await S(A);
-assert(fin.mode === 'done' && fin.moves.length === 10, 'game ends after 10 scoops');
+assert(fin.mode === 'done' && fin.moves.length === 10, 'game ends after 10 moves');
 await A.page.waitForSelector('#sheet-results.open', { timeout: 6000 });
 await A.page.waitForTimeout(900);
 const finalScore = Number(await A.page.textContent('[data-testid=final-score]'));
@@ -116,9 +118,11 @@ await A.page.waitForTimeout(400);
 const shareTxt = await A.page.textContent('[data-testid=share-preview]');
 log('share text', shareTxt);
 assert(shareTxt.includes('https://tstockham96.github.io/sown/#c='), 'share link points at the published URL');
-assert(shareTxt.startsWith(`SOWN #${info.n}`) && shareTxt.includes(`${fin.score} / ${info.best}`), 'share text has puzzle number and score');
-assert(!/right|left|up|down/i.test(shareTxt.split('\n').slice(0, 3).join(' ')), 'share text is spoiler-free');
-assert([...shareTxt.split('\n')[2]].filter((ch) => /[▫🌱🌿🌻]/u.test(ch)).length === 10, 'share has one glyph per scoop');
+const sl = shareTxt.split('\n');
+assert(sl[0] === `FOURS #${info.n} · ${fin.score} / ${info.best}`, 'share line 1 is "FOURS #n · score / best"');
+assert(!/right|left|up|down/i.test(sl.slice(0, 3).join(' ')), 'share text is spoiler-free');
+assert([...sl[1]].length === 10 && [...sl[1]].every((ch) => '⬛🟨🟧🟥'.includes(ch)), 'share has one square per move');
+assert(!/seed|harvest|scoop|field|pot|ripe|sown|[🌱🌿🌻🥀🌾🧺✨🏆]/iu.test(sl.slice(0, 3).join(' ')), 'share has no farm words or plant emoji');
 
 await A.page.click('[data-testid=challenge]');
 await A.page.fill('[data-testid=name]', 'Thomas');
@@ -133,7 +137,7 @@ await A.page.waitForTimeout(300);
 await shot(A, '05-results-crowd.png');
 
 await A.page.goto(FILE);
-await A.page.waitForFunction(() => !!window.__sown);
+await A.page.waitForFunction(() => !!window.__fours);
 await A.page.waitForTimeout(500);
 const after = await S(A);
 assert(after.mode === 'done' && after.score === fin.score, 'result persists across reload');
@@ -147,7 +151,15 @@ assert(streak === '1', 'streak = 1');
 await shot(A, '06-stats.png');
 await A.page.click('#sheet-stats [data-archive]');
 await A.page.waitForTimeout(500);
-assert(await A.page.isVisible('[data-testid=paywall]'), 'archive is behind the SOWN+ flag');
+assert(await A.page.isVisible('[data-testid=paywall]'), 'archive is behind the FOURS+ flag');
+// Copy audit: every sheet and the board are free of farm words
+await A.page.evaluate(() => { document.querySelector('#sheet-archive [data-close]').click(); document.querySelector('#btn-help').click(); });
+await A.page.waitForTimeout(500);
+await shot(A, '06b-help.png');
+const allText = await A.page.evaluate(() => document.title + ' ' + document.body.innerText + ' ' + [...document.querySelectorAll('.sheet')].map((e) => e.textContent).join(' ') + ' ' + [...document.querySelectorAll('meta')].map((m) => m.content || '').join(' '));
+const farm = allText.replace(/https?:\/\/\S+/g, '').match(/\b(seeds?|harvest\w*|scoops?|fields?|pots?|ripe|sown|sow)\b|[🌱🌿🌻🥀🌾🧺✨🏆]/giu);
+assert(!farm, `no farm words anywhere in the UI copy (${farm ? farm.join(',') : 'none'})`);
+assert(/FOURS/.test(await A.page.title()), 'title is FOURS');
 
 // ============================================================ Player B: opens the challenge link, plays with tap + arrows, greedily
 const B = await player('B', FILE + '?reset' + chLink);
@@ -158,7 +170,7 @@ assert(/Thomas/.test(banner) && banner.includes(String(fin.score)), 'challenge b
 await shot(B, '07-challenge.png');
 for (let i = 0; i < 10; i++) {
   const m = await greedyMove(B);
-  await tapSow(B, m, i === 1 ? { onArrows: () => shot(B, '08-tap-arrows.png') } : {});
+  await tapMove(B, m, i === 1 ? { onArrows: () => shot(B, '08-tap-arrows.png') } : {});
   if ((await S(B)).mode !== 'playing') break;
 }
 const fb = await S(B);
@@ -173,6 +185,16 @@ await B.page.evaluate(() => { const el = document.querySelector('[data-testid=vs
 await B.page.waitForTimeout(300);
 await shot(B, '09-vs.png');
 
+// ============================================================ Player C: an old SOWN challenge link still opens
+{
+  const C = await player('C', FILE + '?reset#c=czF8MXw4NHwwMjAzMDIwMjAwfFRob21hcw');
+  await C.page.waitForTimeout(500);
+  const b = await C.page.textContent('[data-testid=challenge-banner]');
+  assert(await C.page.isVisible('[data-testid=challenge-banner]') && /Thomas/.test(b) && /84/.test(b), 'old SOWN challenge link opens with its banner');
+  log('old-link banner', b);
+  await C.ctx.close();
+}
+
 // ============================================================ Video of a full play (CDP screencast -> ffmpeg)
 try {
   const V = await player('V', FILE + '?reset');
@@ -183,8 +205,8 @@ try {
   V.cdp.on('Page.screencastFrame', async (f) => { frames.push({ data: f.data, t: f.metadata.timestamp }); try { await V.cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }); } catch {} });
   await V.cdp.send('Page.startScreencast', { format: 'jpeg', quality: 80, maxWidth: 780, maxHeight: 1688, everyNthFrame: 1 });
   await V.page.waitForTimeout(1500);
-  const line = await V.page.evaluate(() => window.__sown.puzzle.bestLine);
-  for (const m of line) { await dragSow(V, m, { onHold: () => V.page.waitForTimeout(350) }); await V.page.waitForTimeout(250); }
+  const line = await V.page.evaluate(() => window.__fours.puzzle.bestLine);
+  for (const m of line) { await dragMove(V, m, { onHold: () => V.page.waitForTimeout(350) }); await V.page.waitForTimeout(250); }
   await V.page.waitForTimeout(3200);
   await V.cdp.send('Page.stopScreencast');
   const T0 = frames[0].t, T1 = frames[frames.length - 1].t;

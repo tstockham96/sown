@@ -7,16 +7,20 @@ import { puzzleFor } from '../src/core/puzzle';
 import { puzzleNumberFor, dateForPuzzle } from '../src/core/date';
 
 describe('share', () => {
-  it('is spoiler-free: score, tier, one glyph per scoop, no positions', () => {
+  it('is spoiler-free and number-flavoured: FOURS #n · score / best, one square per move, text tier', () => {
     const p = puzzleFor(1);
-    const t = shareText(p, 64, [1, 2, 0, 0, 2, 1, 0, 0, 0, 0], 'https://tstockham96.github.io/sown/', 3);
-    expect(t).toContain('SOWN #1');
-    expect(t).toContain(`64 / ${p.best} seeds`);
-    expect(t).toContain('🔥3');
-    expect(t).toContain(rowText([1, 2, 0, 0, 2, 1, 0, 0, 0, 0]));
+    const row = [1, 2, 0, 0, 2, 3, 0, 0, 0, 0];
+    const t = shareText(p, 64, row, 'https://tstockham96.github.io/sown/', 3);
+    const lines = t.split('\n');
+    expect(lines[0]).toBe(`FOURS #1 · 64 / ${p.best}`);
+    expect(lines[1]).toBe('🟨🟧⬛⬛🟧🟥⬛⬛⬛⬛');
+    expect(lines[1]).toBe(rowText(row));
+    expect(lines[2]).toMatch(/^(Warm-up|Fair|Good|Great|Max) [●○]{4} · streak 3$/);
+    expect(lines[3]).toBe('https://tstockham96.github.io/sown/');
     expect(t).not.toMatch(/right|left|up|down|[A-E][1-5]/);
-    expect(tierFor(p.best, p.best).name).toBe('Bumper crop');
-    expect(tierFor(0, p.best).name).toBe('Thin harvest');
+    expect(lines.slice(0, 3).join(' ')).not.toMatch(/seed|harvest|scoop|field|pot|ripe|SOWN|[🌱🌿🌻🥀🌾🧺✨🏆]/iu);
+    expect(tierFor(p.best, p.best).name).toBe('Max');
+    expect(tierFor(0, p.best).name).toBe('Warm-up');
   });
 });
 describe('challenge', () => {
@@ -24,6 +28,9 @@ describe('challenge', () => {
     const c = { n: 12, score: 88, row: [1, 2, 3, 0, 0, 1, 1, 0, 2, 0], by: 'Thomas' };
     expect(decodeChallenge(encodeChallenge(c))).toEqual(c);
     expect(decodeChallenge('not-a-code')).toBeNull();
+  });
+  it('still opens challenge links made by the SOWN build', () => {
+    expect(decodeChallenge('czF8MXw4NHwwMjAzMDIwMjAwfFRob21hcw')).toEqual({ n: 1, score: 84, row: [0, 2, 0, 3, 0, 2, 0, 2, 0, 0], by: 'Thomas' });
   });
 });
 describe('stats', () => {

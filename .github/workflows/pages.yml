@@ -1,4 +1,4 @@
-name: Deploy SOWN to GitHub Pages
+name: Deploy FOURS to GitHub Pages
 
 on:
   push:

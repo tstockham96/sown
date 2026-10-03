@@ -1,18 +1,20 @@
 import type { Puzzle } from './puzzle';
 
-/** One emoji per scoop: how many pots that scoop harvested. */
-export const GLYPHS = ['▫️', '🌱', '🌿', '🌻'];
-export const glyph = (pots: number) => GLYPHS[Math.max(0, Math.min(3, pots))];
+/** Game display name. (Repo/URL stay `sown` so existing links keep working.) */
+export const NAME = 'FOURS';
+/** One square per move: how many tiles that move cleared. */
+export const GLYPHS = ['⬛', '🟨', '🟧', '🟥'];
+export const glyph = (clears: number) => GLYPHS[Math.max(0, Math.min(3, clears))];
 export const rowText = (row: readonly number[]) => row.map(glyph).join('');
 
-export interface Tier { key: string; name: string; min: number; emoji: string }
-/** Tiers are relative to the best harvest our solver found for the day. */
+export interface Tier { key: string; name: string; min: number; mark: string }
+/** Tiers are relative to the best line our solver found for the day. Plain text + dot marks. */
 export const TIERS: Tier[] = [
-  { key: 'thin', name: 'Thin harvest', min: 0, emoji: '🥀' },
-  { key: 'fair', name: 'Fair harvest', min: 0.5, emoji: '🌾' },
-  { key: 'good', name: 'Good harvest', min: 0.7, emoji: '🧺' },
-  { key: 'gold', name: 'Golden harvest', min: 0.85, emoji: '✨' },
-  { key: 'bumper', name: 'Bumper crop', min: 1, emoji: '🏆' },
+  { key: 'low', name: 'Warm-up', min: 0, mark: '○○○○' },
+  { key: 'fair', name: 'Fair', min: 0.5, mark: '●○○○' },
+  { key: 'good', name: 'Good', min: 0.7, mark: '●●○○' },
+  { key: 'great', name: 'Great', min: 0.85, mark: '●●●○' },
+  { key: 'max', name: 'Max', min: 1, mark: '●●●●' },
 ];
 export function tierIndex(score: number, best: number): number {
   const f = best > 0 ? score / best : 1;
@@ -22,13 +24,13 @@ export function tierIndex(score: number, best: number): number {
 }
 export const tierFor = (score: number, best: number) => TIERS[tierIndex(score, best)];
 
-/** Spoiler-free: no board, no positions — just the score and how each scoop went. */
+/** Spoiler-free: no board, no positions, just the score and how many tiles each move cleared. */
 export function shareText(p: Puzzle, score: number, row: readonly number[], link: string, streak = 0): string {
   const t = tierFor(score, p.best);
   const lines = [
-    `SOWN #${p.n} 🌱`,
-    `${score} / ${p.best} seeds · ${t.name} ${t.emoji}${streak > 1 ? ` · 🔥${streak}` : ''}`,
+    `${NAME} #${p.n} · ${score} / ${p.best}`,
     rowText(row),
+    `${t.name} ${t.mark}${streak > 1 ? ` · streak ${streak}` : ''}`,
   ];
   if (link) lines.push(link);
   return lines.join('\n');
